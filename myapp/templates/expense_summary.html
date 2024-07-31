@@ -1,11 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Expense summary</h1>
-</body>
-</html>
+{%extends 'base.html'%}
+
+{%block main_block%}
+
+<div class="container">
+    <div class="row my-3">
+        <div class="col-4"></div>
+        <div class="col-4 border border-2 rounded p-3 text-center shadow">
+            <h3>TotalExpense:{{total_expense}}</h3>
+        </div>
+        <div class="col-4"></div>
+    </div>
+    <div class="row border border-dark">
+        <div class="col-3 border p-3 d-flex flex-column gap-5">
+
+            <h5 class="text-center">categorySummary</h5>
+           
+            {%for cat in category_summary %}
+                <div class="w-100 border p-3">
+                   <div class="row">
+                    <div class="col-1 bg-success rounded-circle"></div>
+                    <div class="col-10">
+                       <span class="fw-bold "> {{cat.category_object__name}}</span>:{{cat.total}}
+                    </div>
+                   </div>
+                </div>
+            {%endfor%}
+        </div>
+        <div class="col-3 border">
+            category_chart
+        </div>
+        <div class="col-3 border p-3 d-flex flex-column gap-5">
+            payment_summary
+            {%for payment in payment_summary%}
+            <div class="w-100 border p-3">
+                <div class="row">
+                 <div class="col-1 bg-success rounded-circle"></div>
+                 <div class="col-10">
+                    <span class="fw-bold "> {{payment.payment_method}}</span>:{{payment.total}}
+                 </div>
+                </div>
+             </div>
+
+            {%endfor%}
+        </div>
+        <div class="col-3">
+            payement_summary_chart
+        </div>
+    </div>
+</div>
+
+{%endblock%}

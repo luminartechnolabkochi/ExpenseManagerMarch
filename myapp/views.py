@@ -163,10 +163,22 @@ class ExpenseSummaryView(View):
                                     )
         
         total_expense=qs.values("amount").aggregate(total=Sum("amount"))
-        
-        print(total_expense)
 
-        return render(request,"expense_summary.html")
+        category_summary=qs.values("category_object__name").annotate(total=Sum("amount"))
+        
+        payment_summary=qs.values("payment_method").annotate(total=Sum("amount"))
+
+        print(payment_summary)
+
+
+        data={
+            "total_expense":total_expense.get("total"),
+            "category_summary":category_summary,
+            "payment_summary":payment_summary
+
+        }
+
+        return render(request,"expense_summary.html",data)
 
 
             
