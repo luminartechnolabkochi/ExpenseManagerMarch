@@ -4,12 +4,13 @@ from django.views.generic import View
 
 from django.utils import timezone
 
-from myapp.forms import CategoryForm,TransactionForm
+from myapp.forms import CategoryForm,TransactionForm,TransactionFilterForm,RegistrationForm,LoginForm
 
 from myapp.models import Category,Transactions
 
 from django.db.models import  Sum
 
+from django.contrib.auth import authenticate,login,logout
 
 
 class CategoryCreateView(View):
@@ -18,7 +19,7 @@ class CategoryCreateView(View):
 
         form_instance=CategoryForm()
 
-        qs=Category.objects.all()
+        qs=Category.objects.filter(owner=request.user)
 
         return render(request,"category_add.html",{"form":form_instance,"categories":qs})
     
@@ -28,9 +29,28 @@ class CategoryCreateView(View):
 
         if form_instance.is_valid():
 
-            form_instance.save()          
+            form_instance.instance.owner=request.user
 
-            return redirect("category-add")
+            cat_name=form_instance.cleaned_data.get("name")
+
+            user_object=request.user
+
+            is_exist=Category.objects.filter(name__iexact=cat_name,owner=user_object).exists()
+
+            # True false
+
+            if is_exist:
+
+                print("already exist")
+                return render(request,"category_add.html",{"form":form_instance,"message":"category already exist"})
+            
+            else:
+
+
+                form_instance.save()
+                      
+
+                return redirect("category-add")
         
         else:
 
@@ -81,17 +101,21 @@ class TransactionCreateView(View):
 
         cur_year=timezone.now().year
 
-        qs=Transactions.objects.filter(created_date__month=cur_month,created_date__year=cur_year)
+        categories=Category.objects.filter(owner=request.user)
+
+        qs=Transactions.objects.filter(created_date__month=cur_month,created_date__year=cur_year,owner=request.user)
 
 
 
-        return render(request,"transaction_add.html",{"form":form_instance,"transactions":qs})
+        return render(request,"transaction_add.html",{"form":form_instance,"transactions":qs,"categories":categories})
     
     def post(self,request,*args,**kwargs):
 
         form_instance=TransactionForm(request.POST)
 
         if form_instance.is_valid():
+
+            form_instance.instance.owner=request.user
 
             form_instance.save()
 
@@ -186,8 +210,108 @@ class ExpenseSummaryView(View):
 
 
     
+class TransactionSummaryView(View):
+
+    def get(self,request,*args,**kwargs):
+
+        form_instance=TransactionFilterForm()
+
+        cur_month=timezone.now().month
+
+        cur_year=timezone.now().year
+
+
+        if "start_date" in request.GET and "end_date" in request.GET:
+
+            st_date=request.GET.get("start_date")
+
+            end_date=request.GET.get("end_date")
+
+            qs=Transactions.objects.filter(
+                                                created_date__range=(st_date,end_date)
+
+                                            )
+
+                                            # total
+
+        else:    
+            
+            qs=Transactions.objects.filter(
+                                            created_date__month=cur_month,
+                                            created_date__year=cur_year
+                                            )
+        return render(request,"transaction_summary.html",{"transactions":qs,"form":form_instance})
 
 
 
+class ChartView(View):
+
+    def get(self,request,*args,**kwargs):
+
+        return render(request,"chart.html")
+    
+    
+
+class SignUpView(View):
+
+    def get(self,request,*args,**kwargs):
+
+        form_instance=RegistrationForm()
+
+        return render(request,"register.html",{"form":form_instance})
+    
+    def post(self,request,*args,**kwargs):
+
+        form_instance=RegistrationForm(request.POST)
+
+        if form_instance.is_valid():
+
+            # data=form_instance.cleaned_data
+            # User.objects.create(**data)
+
+            form_instance.save()
+
+            print("account created successfully")
+
+            return redirect("signin")
+        else:
+            print("failed to create account")
+
+            return render(request,"register.html",{"form":form_instance})
 
 
+class SignInView(View):
+
+    def get(self,request,*args,**kwargs):
+
+        form_instnce=LoginForm()
+
+        return render(request,"login.html",{"form":form_instnce})
+    
+    def post(self,request,*args,**kwargs):
+
+        form_instance=LoginForm(request.POST)
+
+        if form_instance.is_valid():
+
+            data=form_instance.cleaned_data
+
+            user_obj=authenticate(request,**data)
+
+            if user_obj:
+
+                login(request,user_obj)
+
+                return redirect("summary")
+        
+        return render(request,"login.html",{"form":form_instance})
+
+
+class SignOutView(View):
+
+    def get(self,request,*args,**kwargs):
+
+        logout(request)
+
+        return redirect("signin")
+    
