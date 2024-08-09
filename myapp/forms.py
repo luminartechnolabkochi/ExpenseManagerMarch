@@ -9,6 +9,15 @@ from myapp.models import Category,Transactions
 class CategoryForm(forms.ModelForm):
 
 
+    def __init__(self,*args,**kwargs):
+
+        self.user=kwargs.pop("user")
+
+        return super().__init__(*args,**kwargs)
+
+
+   
+
     class Meta:
 
         model=Category
@@ -31,9 +40,24 @@ class CategoryForm(forms.ModelForm):
 
         budget_amount=int(self.cleaned_data.get("budget"))
 
+        print(self.user,"inside cat form")
+
         if budget_amount<150:
 
             self.add_error("budget","amount > 150")
+
+        category_name=self.cleaned_data.get("name")
+
+        owner=self.user
+
+        is_exist=Category.objects.filter(name__iexact=category_name,owner=owner).exists()
+
+        if is_exist:
+
+            self.add_error("name","category with this name already exist")
+
+        
+        
 
         return self.cleaned_data
  

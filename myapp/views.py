@@ -12,12 +12,15 @@ from django.db.models import  Sum
 
 from django.contrib.auth import authenticate,login,logout
 
+from django.db.models import Sum, F,Q
+
+from django.contrib import messages
 
 class CategoryCreateView(View):
 
     def get(self,request,*args,**kwargs):
 
-        form_instance=CategoryForm()
+        form_instance=CategoryForm(user=request.user)
 
         qs=Category.objects.filter(owner=request.user)
 
@@ -25,32 +28,15 @@ class CategoryCreateView(View):
     
     def post(self,request,*args,**kwargs):
 
-        form_instance=CategoryForm(request.POST)
+        form_instance=CategoryForm(request.POST,user=request.user)
 
         if form_instance.is_valid():
 
-            form_instance.instance.owner=request.user
+            form_instance.instance.owner=request.user           
 
-            cat_name=form_instance.cleaned_data.get("name")
+            form_instance.save()                      
 
-            user_object=request.user
-
-            is_exist=Category.objects.filter(name__iexact=cat_name,owner=user_object).exists()
-
-            # True false
-
-            if is_exist:
-
-                print("already exist")
-                return render(request,"category_add.html",{"form":form_instance,"message":"category already exist"})
-            
-            else:
-
-
-                form_instance.save()
-                      
-
-                return redirect("category-add")
+            return redirect("category-add")
         
         else:
 
@@ -202,6 +188,37 @@ class ExpenseSummaryView(View):
 
         }
 
+        # //testing
+
+        print("test")
+
+        categories = Category.objects.filter(owner=request.user).annotate(
+                                                            total_spent=Sum(
+                                                                'transactions__amount'
+                                                                ,
+                                                                  filter=Q(transactions__owner=request.user)
+                                                                  )
+                                                                ).annotate(
+                                                                balance_amount=F('budget') - F('total_spent')
+                                                                )
+        
+        print(categories)
+
+        
+        for category in categories:
+
+            if category.total_spent is None:
+
+                category.total_spent = 0
+
+            if category.balance_amount is None:
+
+                category.balance_amount = category.budget
+
+        print( [[c,c.total_spent,c.balance_amount]for c in categories])
+
+        
+
         return render(request,"expense_summary.html",data)
 
 
@@ -271,11 +288,16 @@ class SignUpView(View):
 
             form_instance.save()
 
+            messages.success(request,"account created successfully")
+            
+
             print("account created successfully")
 
             return redirect("signin")
         else:
             print("failed to create account")
+
+            messages.error(request,"failed to create account")
 
             return render(request,"register.html",{"form":form_instance})
 
@@ -302,7 +324,11 @@ class SignInView(View):
 
                 login(request,user_obj)
 
+                messages.success(request,"login successfully")
+
                 return redirect("summary")
+            
+        messages.error(request,"failed to login")
         
         return render(request,"login.html",{"form":form_instance})
 
