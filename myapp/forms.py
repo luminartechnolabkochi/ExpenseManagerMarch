@@ -22,13 +22,16 @@ class CategoryForm(forms.ModelForm):
 
         model=Category
 
-        fields=["name","budget"]
+        fields=["name","budget","image"]
+
 
         widgets={
             
             "name":forms.TextInput(attrs={"class":"form-control"}),
 
             "budget":forms.NumberInput(attrs={"class":"form-control"}),
+
+            "image":forms.FileInput(attrs={"class":"form-control"})
 
            
 
@@ -50,12 +53,26 @@ class CategoryForm(forms.ModelForm):
 
         owner=self.user
 
-        is_exist=Category.objects.filter(name__iexact=category_name,owner=owner).exists()
+        if not self.instance.pk:
+             
+             is_exist=Category.objects.filter(name__iexact=category_name,owner=owner).exists()
 
-        if is_exist:
+             if is_exist:
 
-            self.add_error("name","category with this name already exist")
+                self.add_error("name","category with this name already exist")
+        else:
+            
+             is_exist=Category.objects.filter(name__iexact=category_name,owner=owner).exclude(pk=self.instance).exists()
 
+             if is_exist:
+
+                self.add_error("name","category with this name already exist")
+
+
+
+
+
+       
         
         
 
@@ -108,19 +125,31 @@ from django.contrib.auth.forms import UserCreationForm
 
 class RegistrationForm(UserCreationForm):
 
+    password1=forms.CharField(widget=forms.PasswordInput(attrs={"class":"form-control mb-2"}))
+    
+    password2=forms.CharField(widget=forms.PasswordInput(attrs={"class":"form-control mb-2"}))
+
+
     class Meta:
 
         model=User
 
         fields=["username","email","password1","password2"]
 
+        widgets={
+
+            "username":forms.TextInput(attrs={"class":"form-control mb-2"}),
+            "email":forms.EmailInput(attrs={"class":"form-control mb-2"}),
+
+        }
+
 
 
 class LoginForm(forms.Form):
 
-    username=forms.CharField()
+    username=forms.CharField(widget=forms.TextInput(attrs={"class":"form-control mb-3"}))
 
-    password=forms.CharField()
+    password=forms.CharField(widget=forms.PasswordInput(attrs={"class":"form-control mb-3"}))
 
     
 

@@ -16,9 +16,23 @@ from django.db.models import Sum, F,Q
 
 from django.contrib import messages
 
+from myapp.decorators import signin_required
+
+from django.utils.decorators import method_decorator
+
+# function_dec => method_deco dispatch
+
+# @method_decoartor(signin_requird,name="dispatch")
+
+@method_decorator(signin_required,name="dispatch")
 class CategoryCreateView(View):
 
     def get(self,request,*args,**kwargs):
+
+        if not request.user.is_authenticated:
+            messages.error(request,"invalid session")
+            return redirect("signin")
+        
 
         form_instance=CategoryForm(user=request.user)
 
@@ -28,7 +42,13 @@ class CategoryCreateView(View):
     
     def post(self,request,*args,**kwargs):
 
-        form_instance=CategoryForm(request.POST,user=request.user)
+        if not request.user.is_authenticated:
+            messages.error(request,"invalid session")
+            return redirect("signin")
+
+
+
+        form_instance=CategoryForm(request.POST,user=request.user,files=request.FILES)
 
         if form_instance.is_valid():
 
@@ -45,6 +65,7 @@ class CategoryCreateView(View):
 
 # url:lh:8000/category/{int:pk}/change/
 
+@method_decorator(signin_required,name="dispatch")
 class CategoryEditView(View):
 
     def get(self,request,*args,**kwargs):
@@ -76,7 +97,7 @@ class CategoryEditView(View):
 
 
 
-
+@method_decorator(signin_required,name="dispatch")
 class TransactionCreateView(View):
 
     def get(self,request,*args,**kwargs):
@@ -113,7 +134,7 @@ class TransactionCreateView(View):
 
 
 #url:lh:8000/transactions/{int:pk}/change/
-
+@method_decorator(signin_required,name="dispatch")
 class TransactionUpdateView(View):
 
     def get(self,request,*args,**kwargs):
@@ -146,7 +167,7 @@ class TransactionUpdateView(View):
             return render(request,"transaction_edit.html",{"form":form_instance})
 
 
-
+@method_decorator(signin_required,name="dispatch")
 class TransactionDeleteView(View):
 
     def get(self,request,*args,**kwargs):
@@ -159,6 +180,7 @@ class TransactionDeleteView(View):
 
 
 from django.db.models import Sum
+@method_decorator(signin_required,name="dispatch")
 class ExpenseSummaryView(View):
 
     def get(self,request,*args,**kwargs):
@@ -226,7 +248,7 @@ class ExpenseSummaryView(View):
 
 
 
-    
+@method_decorator(signin_required,name="dispatch") 
 class TransactionSummaryView(View):
 
     def get(self,request,*args,**kwargs):
@@ -332,6 +354,8 @@ class SignInView(View):
         
         return render(request,"login.html",{"form":form_instance})
 
+
+@method_decorator(signin_required,name="dispatch")
 
 class SignOutView(View):
 

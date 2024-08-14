@@ -11,6 +11,8 @@ class Category(models.Model):
 
     owner=models.ForeignKey(User,on_delete=models.CASCADE)
 
+    image=models.ImageField(upload_to="catimages",default="/catimages/default.png")
+
     class Meta:
 
         unique_together=("name","owner")
